@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .venv/
+
+# Anotações pessoais, fora da entrega
+docs/roteiro-video.md
