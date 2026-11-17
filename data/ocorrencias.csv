@@ -1,0 +1,15 @@
+id;categoria;descricao;bairro;local;dia_abertura;status
+001;iluminacao;Poste apagado na esquina;Centro;Praça Central;2;concluida
+002;limpeza;Entulho acumulado na calçada;Vila Nova;Rua sem saída próxima à escola;3;concluida
+003;acessibilidade;Rampa de acesso quebrada;Centro;Entrada da biblioteca;4;em_analise
+004;conservacao;Banco da praça com tábuas soltas;Jardim das Flores;Praça do coreto;5;aberta
+005;iluminacao;Lâmpadas queimadas ao longo da trilha;Jardim das Flores;Trilha do parque;6;em_analise
+006;limpeza;Lixeira transbordando;Centro;Ponto de ônibus da avenida;7;concluida
+007;acessibilidade;Calçada sem piso tátil;Vila Nova;Calçada do posto de saúde;9;aberta
+008;conservacao;Alambrado da quadra rasgado;Vila Nova;Quadra poliesportiva;10;em_analise
+009;iluminacao;Refletor da quadra apagado;Vila Nova;Quadra poliesportiva;12;aberta
+010;limpeza;Mato alto no terreno comunitário;Jardim das Flores;Horta comunitária;13;em_analise
+011;acessibilidade;Semáforo de pedestres sem aviso sonoro;Centro;Travessia da avenida;15;concluida
+012;conservacao;Pichação no muro da escola;Centro;Muro da escola;18;aberta
+013;;Buraco na calçada perto do mercado;Vila Nova;Calçada do mercado;22;aberta
+007;limpeza;Folhas entupindo o bueiro;Centro;Bueiro da rua da feira;24;aberta

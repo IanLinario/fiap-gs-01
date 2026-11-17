@@ -1,0 +1,13 @@
+id;dia;de;para;nota
+001;4;aberta;em_analise;Vistoria agendada pela equipe de manutenção
+002;5;aberta;em_analise;Mutirão de limpeza programado
+006;8;aberta;em_analise;Coleta extra solicitada
+002;8;em_analise;concluida;Entulho retirado no mutirão
+001;9;em_analise;concluida;Lâmpada trocada
+003;10;aberta;em_analise;Orçamento da nova rampa em levantamento
+006;11;em_analise;concluida;Lixeira maior instalada
+005;12;aberta;em_analise;Trecho da trilha mapeado
+008;15;aberta;em_analise;Medição do alambrado feita
+011;16;aberta;em_analise;Pedido de botoeira sonora registrado
+010;18;aberta;em_analise;Roçada incluída no cronograma
+011;27;em_analise;concluida;Botoeira sonora instalada e testada
