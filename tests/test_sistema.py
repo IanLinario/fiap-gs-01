@@ -11,6 +11,7 @@ from painel import (  # noqa: E402
     examinar_proxima, filtrar, montar_hierarquia, montar_matriz_categoria_status,
     listar_ultimas_atualizacoes, validar_ocorrencia,
 )
+from utils import transformar_em_porcentagem  # noqa: E402
 
 
 class TestCarga(unittest.TestCase):
@@ -119,7 +120,7 @@ class TestEstruturasEIndicadores(unittest.TestCase):
         self.assertEqual(len(resumo["pendentes"]), 8)
         self.assertAlmostEqual(resumo["idade_media_pendentes"], 163 / 8)
         self.assertAlmostEqual(resumo["taxa_resolucao"], 4 / 12 * 100)
-        self.assertEqual(indicadores.transformar_em_porcentagem(1, 0), 0.0)
+        self.assertEqual(transformar_em_porcentagem(1, 0), 0.0)
 
 
 if __name__ == "__main__":

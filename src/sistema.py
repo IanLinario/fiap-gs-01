@@ -10,9 +10,10 @@ import indicadores
 from painel import (
     CATEGORIAS, DIA_ATUAL, SIGNIFICADO_STATUS, STATUS, atualizar_status,
     buscar_por_codigo, cadastrar, carregar_painel, listar_eventos_da_ocorrencia,
-    examinar_proxima, filtrar, montar_hierarquia, montar_matriz_categoria_status, normalizar,
+    examinar_proxima, filtrar, montar_hierarquia, montar_matriz_categoria_status,
     listar_ultimas_atualizacoes,
 )
+from utils import normalizar, transformar_em_porcentagem
 
 LINHA = "=" * 72
 
@@ -134,14 +135,14 @@ def mostrar_indicadores(painel):
     print("\n1) Proporção por categoria = ocorrências da categoria / total x 100")
     print(formatar_tabela(
         ["Categoria", "Qtd", "%"],
-        [[CATEGORIAS[categoria], quantidade, f"{indicadores.transformar_em_porcentagem(quantidade, resumo['total']):.1f}%"]
+        [[CATEGORIAS[categoria], quantidade, f"{transformar_em_porcentagem(quantidade, resumo['total']):.1f}%"]
          for categoria, quantidade in resumo["por_categoria"].items()],
     ))
 
     print("\n2) Proporção por status = ocorrências no status / total x 100")
     print(formatar_tabela(
         ["Status", "Qtd", "%"],
-        [[STATUS[status], quantidade, f"{indicadores.transformar_em_porcentagem(quantidade, resumo['total']):.1f}%"]
+        [[STATUS[status], quantidade, f"{transformar_em_porcentagem(quantidade, resumo['total']):.1f}%"]
          for status, quantidade in resumo["por_status"].items()],
     ))
 

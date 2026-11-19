@@ -4,6 +4,7 @@ INDICADORES do painel
 Contagens, proporções e tempos calculados só com laços e operações simples.
 """
 from painel import CATEGORIAS, DIA_ATUAL, STATUS, listar_eventos_da_ocorrencia
+from utils import calcular_media, transformar_em_porcentagem
 
 
 def contar_por(ocorrencias, campo, chaves):
@@ -12,13 +13,6 @@ def contar_por(ocorrencias, campo, chaves):
     for ocorrencia in ocorrencias:
         contagem[ocorrencia[campo]] += 1
     return contagem
-
-
-def transformar_em_porcentagem(parte, total):
-    """Percentual de 0 a 100. Total zero dá 0, em vez de erro de divisão."""
-    if total == 0:
-        return 0.0
-    return parte / total * 100
 
 
 def encontrar_dia_de_conclusao(painel, codigo):
@@ -37,12 +31,6 @@ def calcular_tempos_de_conclusao(painel):
             if fim is not None:
                 tempos.append((ocorrencia["id"], ocorrencia["dia_abertura"], fim, fim - ocorrencia["dia_abertura"]))
     return tempos
-
-
-def calcular_media(valores):
-    if not valores:
-        return 0.0
-    return sum(valores) / len(valores)
 
 
 def listar_pendencias(painel):

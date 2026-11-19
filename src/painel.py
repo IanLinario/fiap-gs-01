@@ -13,10 +13,10 @@ organiza tudo nas estruturas pedidas no enunciado:
 
 Só usa a biblioteca padrão do Python.
 """
-import csv
 import os
-import unicodedata
 from collections import deque
+
+from utils import esta_vazio, ler_csv, normalizar, parece_dado_pessoal
 
 PASTA_DADOS = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
@@ -59,18 +59,8 @@ CAMPOS_OBRIGATORIOS = CAMPOS  # todos são obrigatórios
 
 
 # ---------------------------------------------------------------------------
-# Texto
+# Códigos
 # ---------------------------------------------------------------------------
-
-def normalizar(texto):
-    """'Em Análise ' -> 'em_analise'. Aceita o que a pessoa digitar, com ou sem acento."""
-    if texto is None:
-        return ""
-    texto = texto.strip().lower()
-    sem_acento = unicodedata.normalize("NFKD", texto)
-    sem_acento = "".join(caractere for caractere in sem_acento if not unicodedata.combining(caractere))
-    return sem_acento.replace(" ", "_").replace("-", "_")
-
 
 def normalizar_codigo(codigo):
     """'14' -> '014'. Códigos têm sempre três dígitos."""
@@ -78,23 +68,6 @@ def normalizar_codigo(codigo):
     if codigo.isdigit():
         return codigo.zfill(3)
     return codigo
-
-
-def esta_vazio(valor):
-    return valor is None or str(valor).strip() == ""
-
-
-def parece_dado_pessoal(texto):
-    """True se o texto tem e-mail ou uma sequência longa de dígitos (telefone, CPF)."""
-    digitos_seguidos = 0
-    maior = 0
-    for caractere in texto:
-        if caractere.isdigit():
-            digitos_seguidos += 1
-            maior = max(maior, digitos_seguidos)
-        elif caractere not in " .-()":
-            digitos_seguidos = 0
-    return "@" in texto or maior >= 8
 
 
 # ---------------------------------------------------------------------------
@@ -136,11 +109,6 @@ def validar_ocorrencia(registro, codigos_usados):
 # ---------------------------------------------------------------------------
 # Carga dos arquivos
 # ---------------------------------------------------------------------------
-
-def ler_csv(caminho):
-    with open(caminho, encoding="utf-8", newline="") as arquivo:
-        return list(csv.DictReader(arquivo, delimiter=";"))
-
 
 def criar_painel_vazio():
     return {

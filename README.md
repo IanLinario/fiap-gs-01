@@ -213,7 +213,8 @@ fiap-gs-01/
 ├── src/
 │   ├── sistema.py        # interface textual (menu e --demo)
 │   ├── painel.py         # carga, validação, estruturas, consultas e atualizações
-│   └── indicadores.py    # contagens, proporções, tempos e interpretação
+│   ├── indicadores.py    # contagens, proporções, tempos e interpretação
+│   └── utils.py          # funções genéricas: texto, leitura de CSV, porcentagem e média
 ├── tests/
 │   └── test_sistema.py   # 15 testes automáticos
 └── README.md
@@ -246,7 +247,7 @@ As alterações feitas durante a execução ficam só na memória; os arquivos C
 - **Dias simulados** (1 a 30) em vez de datas: as contas de tempo são subtrações simples e o protótipo não parece um registro real.
 - **Registros inválidos são recusados, não corrigidos.** Adivinhar a categoria de uma ocorrência sem categoria poderia esconder um erro; o sistema mostra o problema e a linha do CSV para alguém corrigir.
 - **Transições de status num dicionário** (`TRANSICOES`). A regra de quem pode ir para onde fica num lugar só e a mensagem de erro é montada a partir dela.
-- **Código dividido em três arquivos**: `painel.py` (dados e regras), `indicadores.py` (contas) e `sistema.py` (tela). Os testes usam os dois primeiros sem passar pelo menu.
+- **Código dividido em quatro arquivos**: `painel.py` (dados e regras), `indicadores.py` (contas), `sistema.py` (tela) e `utils.py` (funções genéricas, como normalizar texto, ler CSV e calcular porcentagem e média, que não dependem das regras do painel e são usadas pelos outros três). Os testes usam o painel e os indicadores sem passar pelo menu.
 
 ### 📢 Observações Gerais
 
