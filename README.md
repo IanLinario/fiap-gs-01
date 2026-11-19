@@ -20,7 +20,7 @@
 ## 👩‍🏫 Professores:
 
 ### Tutor(a)
-- André Tritiack de Farias
+- <a href="https://www.linkedin.com/in/andretritiack/">André Tritiack de Farias</a>
   
 ### Coordenador(a)
 - <a href="https://www.linkedin.com/in/andregodoichiovato/">André Godoi Chiovato</a>
