@@ -251,7 +251,7 @@ As alterações feitas durante a execução ficam só na memória; os arquivos C
 
 ### 📢 Observações Gerais
 
-* **Participação na Competição:** [ ] Sim, aceitamos participar / [ ] Não vamos participar.
+* **Participação na Competição:** [ ] Sim, aceitamos participar / [X] Não vamos participar.
 
 ## 🧭 Conclusões, limitações e aprendizados
 
