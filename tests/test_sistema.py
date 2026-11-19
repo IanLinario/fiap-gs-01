@@ -8,8 +8,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import indicadores  # noqa: E402
 from painel import (  # noqa: E402
     atualizar_status, buscar_por_codigo, cadastrar, carregar_painel,
-    examinar_proxima, filtrar, hierarquia, matriz_categoria_status,
-    ultimas_atualizacoes, validar_ocorrencia,
+    examinar_proxima, filtrar, montar_hierarquia, montar_matriz_categoria_status,
+    listar_ultimas_atualizacoes, validar_ocorrencia,
 )
 
 
@@ -24,7 +24,7 @@ class TestCarga(unittest.TestCase):
         self.assertEqual(self.painel["avisos"], [])
 
     def test_recusa_sem_categoria_e_codigo_repetido(self):
-        motivos = [p for r in self.painel["rejeitados"] for p in r["problemas"]]
+        motivos = [problema for rejeitado in self.painel["rejeitados"] for problema in rejeitado["problemas"]]
         self.assertIn("campo obrigatório 'categoria' ausente", motivos)
         self.assertTrue(any("repetido" in m for m in motivos))
         # o 007 que ficou é o primeiro do arquivo
@@ -34,7 +34,7 @@ class TestCarga(unittest.TestCase):
         self.assertEqual(list(self.painel["fila"]), ["004", "007", "009", "012"])
 
     def test_topo_da_pilha_e_o_evento_mais_recente(self):
-        topo = ultimas_atualizacoes(self.painel, 1)[0]
+        topo = listar_ultimas_atualizacoes(self.painel, 1)[0]
         self.assertEqual((topo["id"], topo["dia"]), ("011", 27))
 
 
@@ -49,7 +49,7 @@ class TestValidacao(unittest.TestCase):
         problemas = validar_ocorrencia(
             {"id": "050", "categoria": "limpeza", "descricao": "x", "bairro": "b",
              "local": "l", "dia_abertura": "45", "status": "aberta"}, {})
-        self.assertTrue(any("fora da simulação" in p for p in problemas))
+        self.assertTrue(any("fora da simulação" in problema for problema in problemas))
 
     def test_recusa_dado_pessoal(self):
         painel = carregar_painel()
@@ -72,7 +72,7 @@ class TestOperacoes(unittest.TestCase):
     def test_busca_e_filtro(self):
         self.assertIsNone(buscar_por_codigo(self.painel, "999"))
         abertas_iluminacao = filtrar(self.painel, categoria="iluminacao", status="aberta")
-        self.assertEqual([o["id"] for o in abertas_iluminacao], ["009"])
+        self.assertEqual([ocorrencia["id"] for ocorrencia in abertas_iluminacao], ["009"])
         self.assertEqual(len(filtrar(self.painel)), 12)
 
     def test_transicoes(self):
@@ -83,7 +83,7 @@ class TestOperacoes(unittest.TestCase):
         ok, _ = atualizar_status(self.painel, "004", "Em análise")
         self.assertTrue(ok)
         self.assertNotIn("004", self.painel["fila"])
-        self.assertEqual(ultimas_atualizacoes(self.painel, 1)[0]["id"], "004")
+        self.assertEqual(listar_ultimas_atualizacoes(self.painel, 1)[0]["id"], "004")
 
     def test_devolver_para_fila(self):
         atualizar_status(self.painel, "003", "aberta", "Faltam fotos do local")
@@ -101,25 +101,25 @@ class TestEstruturasEIndicadores(unittest.TestCase):
         self.painel = carregar_painel()
 
     def test_matriz(self):
-        categorias, situacoes, matriz = matriz_categoria_status(self.painel)
+        categorias, situacoes, matriz = montar_matriz_categoria_status(self.painel)
         self.assertEqual(sum(sum(linha) for linha in matriz), 12)
         # cada categoria tem 3 ocorrências; cada status também tem 4
         self.assertEqual([sum(linha) for linha in matriz], [3, 3, 3, 3])
-        self.assertEqual([sum(l[j] for l in matriz) for j in range(3)], [4, 4, 4])
+        self.assertEqual([sum(linha[j] for linha in matriz) for j in range(3)], [4, 4, 4])
 
     def test_hierarquia(self):
-        arvore = hierarquia(self.painel)
+        arvore = montar_hierarquia(self.painel)
         self.assertEqual(sorted(arvore), ["Centro", "Jardim das Flores", "Vila Nova"])
         self.assertEqual(arvore["Centro"]["acessibilidade"], ["003", "011"])
 
     def test_indicadores(self):
-        r = indicadores.resumo(self.painel)
-        self.assertEqual(r["total"], 12)
-        self.assertAlmostEqual(r["tempo_medio_conclusao"], 7.0)  # (7 + 5 + 4 + 12) / 4
-        self.assertEqual(len(r["pendentes"]), 8)
-        self.assertAlmostEqual(r["idade_media_pendentes"], 163 / 8)
-        self.assertAlmostEqual(r["taxa_resolucao"], 4 / 12 * 100)
-        self.assertEqual(indicadores.proporcao(1, 0), 0.0)
+        resumo = indicadores.resumir_indicadores(self.painel)
+        self.assertEqual(resumo["total"], 12)
+        self.assertAlmostEqual(resumo["tempo_medio_conclusao"], 7.0)  # (7 + 5 + 4 + 12) / 4
+        self.assertEqual(len(resumo["pendentes"]), 8)
+        self.assertAlmostEqual(resumo["idade_media_pendentes"], 163 / 8)
+        self.assertAlmostEqual(resumo["taxa_resolucao"], 4 / 12 * 100)
+        self.assertEqual(indicadores.transformar_em_porcentagem(1, 0), 0.0)
 
 
 if __name__ == "__main__":

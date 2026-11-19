@@ -75,8 +75,8 @@ Não dá para pular de Aberta para Concluída: toda demanda passa por análise.
 | **Dicionário** | `painel["indice"]` (`{código: ocorrência}`) | Buscar, validar duplicados e atualizar pelo código | Acesso direto pela chave, sem varrer a lista inteira |
 | **Fila** | `painel["fila"]` (`collections.deque`) | Demandas **Aberta** ainda não examinadas, da mais antiga para a mais nova; a opção 6 tira sempre a da frente | Primeiro a entrar, primeiro a sair: é justo atender quem espera há mais tempo. O `deque` tira da frente sem deslocar os outros itens, como faria `list.pop(0)` |
 | **Pilha** | `painel["pilha"]` | Cada mudança de status é empilhada; a opção 7 lê do topo para baixo | Último a entrar, primeiro a sair: o topo é sempre o evento mais recente |
-| **Hierarquia** | `hierarquia()`: `{bairro: {categoria: [códigos]}}` | Mostra a comunidade como bairro → categoria → ocorrências | Responde "o que está acontecendo no meu bairro?" e mostra onde cada tipo de problema se concentra |
-| **Matriz** | `matriz_categoria_status()`: lista de listas 4 × 3 | Linha = categoria, coluna = status, célula = quantidade | Os totais por categoria são as somas das linhas e os totais por status, as somas das colunas; é a origem dos indicadores |
+| **Hierarquia** | `montar_hierarquia()`: `{bairro: {categoria: [códigos]}}` | Mostra a comunidade como bairro → categoria → ocorrências | Responde "o que está acontecendo no meu bairro?" e mostra onde cada tipo de problema se concentra |
+| **Matriz** | `montar_matriz_categoria_status()`: lista de listas 4 × 3 | Linha = categoria, coluna = status, célula = quantidade | Os totais por categoria são as somas das linhas e os totais por status, as somas das colunas; é a origem dos indicadores |
 
 ## 🔀 Regras lógicas
 
@@ -86,10 +86,10 @@ Um registro só entra na lista se passar por todas as regras. Se falhar, ele é 
 
 | Regra | Condição | Mensagem |
 |---|---|---|
-| Campo obrigatório | `vazio(campo)` para qualquer campo | `campo obrigatório 'categoria' ausente` |
-| Código único | `not vazio(codigo) and codigo in codigos_usados` | `código 007 repetido` |
-| Categoria padronizada | `not vazio(categoria) and categoria not in CATEGORIAS` | `categoria desconhecida` |
-| Status padronizado | `not vazio(status) and status not in STATUS` | `status desconhecido` |
+| Campo obrigatório | `esta_vazio(campo)` para qualquer campo | `campo obrigatório 'categoria' ausente` |
+| Código único | `not esta_vazio(codigo) and codigo in codigos_usados` | `código 007 repetido` |
+| Categoria padronizada | `not esta_vazio(categoria) and categoria not in CATEGORIAS` | `categoria desconhecida` |
+| Status padronizado | `not esta_vazio(status) and status not in STATUS` | `status desconhecido` |
 | Dia válido | `int(dia) < 1 or int(dia) > DIA_ATUAL` | `dia de abertura fora da simulação` |
 | Privacidade | `"@" in texto or maior_sequencia_de_digitos >= 8` | `o texto parece conter dado pessoal` |
 
@@ -98,7 +98,7 @@ No arquivo de exemplo, a linha do código **013** não tem categoria e a segunda
 ### Expressão booleana documentada: o filtro
 
 ```python
-(categoria is None or o["categoria"] == categoria) and (status is None or o["status"] == status)
+(categoria is None or ocorrencia["categoria"] == categoria) and (status is None or ocorrencia["status"] == status)
 ```
 
 - Cada parêntese diz "não há filtro **OU** o valor bate". Quando a pessoa deixa a categoria em branco (`None`), o primeiro lado do `or` já é verdadeiro e todas as categorias passam.
@@ -120,10 +120,10 @@ Antes disso, se o código não existe, a resposta é `Ocorrência 099 não encon
 ### Onde aparecem AND, OR e NOT
 
 1. **Filtro** (acima): `or` dentro de cada critério e `and` entre eles.
-2. **Validação de código único e de categoria/status**: `not vazio(x) and x not in ...`. Um campo vazio já gera a mensagem "ausente", e o `not vazio` evita repetir o erro como "desconhecido".
+2. **Validação de código único e de categoria/status**: `not esta_vazio(x) and x not in ...`. Um campo vazio já gera a mensagem "ausente", e o `not esta_vazio` evita repetir o erro como "desconhecido".
 3. **Privacidade**: `"@" in texto or maior >= 8`. Basta um sinal de e-mail ou de telefone/CPF para recusar.
 4. **Transição**: `not (novo in TRANSICOES[atual])`.
-5. **Pendências**: `not (o["status"] == "concluida")`.
+5. **Pendências**: `not (ocorrencia["status"] == "concluida")`.
 
 ## 📊 Indicadores
 

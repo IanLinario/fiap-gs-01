@@ -9,9 +9,9 @@ import sys
 import indicadores
 from painel import (
     CATEGORIAS, DIA_ATUAL, SIGNIFICADO_STATUS, STATUS, atualizar_status,
-    buscar_por_codigo, cadastrar, carregar_painel, eventos_da_ocorrencia,
-    examinar_proxima, filtrar, hierarquia, matriz_categoria_status, normalizar,
-    ultimas_atualizacoes,
+    buscar_por_codigo, cadastrar, carregar_painel, listar_eventos_da_ocorrencia,
+    examinar_proxima, filtrar, montar_hierarquia, montar_matriz_categoria_status, normalizar,
+    listar_ultimas_atualizacoes,
 )
 
 LINHA = "=" * 72
@@ -21,53 +21,53 @@ LINHA = "=" * 72
 # Formatação
 # ---------------------------------------------------------------------------
 
-def tabela(cabecalho, linhas):
+def formatar_tabela(cabecalho, linhas):
     """Tabela em texto puro, com colunas alinhadas (lê bem em leitor de tela)."""
-    linhas = [[str(c) for c in linha] for linha in linhas]
-    larguras = [len(c) for c in cabecalho]
+    linhas = [[str(celula) for celula in linha] for linha in linhas]
+    larguras = [len(nome_coluna) for nome_coluna in cabecalho]
     for linha in linhas:
         for i, celula in enumerate(linha):
             larguras[i] = max(larguras[i], len(celula))
-    def formatar(celulas):
-        return " | ".join(c.ljust(larguras[i]) for i, c in enumerate(celulas))
-    saida = [formatar(cabecalho), "-+-".join("-" * l for l in larguras)]
-    saida += [formatar(linha) for linha in linhas]
+    def formatar_linha(celulas):
+        return " | ".join(celula.ljust(larguras[i]) for i, celula in enumerate(celulas))
+    saida = [formatar_linha(cabecalho), "-+-".join("-" * largura for largura in larguras)]
+    saida += [formatar_linha(linha) for linha in linhas]
     return "\n".join(saida)
 
 
-def titulo(texto):
+def mostrar_titulo(texto):
     print()
     print(LINHA)
     print(texto.upper())
     print(LINHA)
 
 
-def mostrar_ocorrencias(lista):
-    if not lista:
+def mostrar_ocorrencias(ocorrencias):
+    if not ocorrencias:
         print("Nenhuma ocorrência encontrada com esses critérios.")
         return
     linhas = [
-        [o["id"], CATEGORIAS[o["categoria"]], o["bairro"], o["local"],
-         f"dia {o['dia_abertura']}", STATUS[o["status"]]]
-        for o in lista
+        [ocorrencia["id"], CATEGORIAS[ocorrencia["categoria"]], ocorrencia["bairro"], ocorrencia["local"],
+         f"dia {ocorrencia['dia_abertura']}", STATUS[ocorrencia["status"]]]
+        for ocorrencia in ocorrencias
     ]
-    print(tabela(["Código", "Categoria", "Bairro", "Local", "Abertura", "Status"], linhas))
-    print(f"\n{len(lista)} ocorrência(s).")
+    print(formatar_tabela(["Código", "Categoria", "Bairro", "Local", "Abertura", "Status"], linhas))
+    print(f"\n{len(ocorrencias)} ocorrência(s).")
 
 
-def mostrar_detalhe(painel, o):
-    print(f"Código:     {o['id']}")
-    print(f"Categoria:  {CATEGORIAS[o['categoria']]}")
-    print(f"Descrição:  {o['descricao']}")
-    print(f"Local:      {o['local']} ({o['bairro']})")
-    print(f"Abertura:   dia {o['dia_abertura']}")
-    print(f"Status:     {STATUS[o['status']]} — {SIGNIFICADO_STATUS[o['status']]}")
-    eventos = eventos_da_ocorrencia(painel, o["id"])
+def mostrar_detalhe(painel, ocorrencia):
+    print(f"Código:     {ocorrencia['id']}")
+    print(f"Categoria:  {CATEGORIAS[ocorrencia['categoria']]}")
+    print(f"Descrição:  {ocorrencia['descricao']}")
+    print(f"Local:      {ocorrencia['local']} ({ocorrencia['bairro']})")
+    print(f"Abertura:   dia {ocorrencia['dia_abertura']}")
+    print(f"Status:     {STATUS[ocorrencia['status']]} — {SIGNIFICADO_STATUS[ocorrencia['status']]}")
+    eventos = listar_eventos_da_ocorrencia(painel, ocorrencia["id"])
     if eventos:
         print("Histórico:")
-        for e in eventos:
-            de = STATUS.get(e["de"], "—")
-            print(f"  dia {e['dia']:>2}: {de} -> {STATUS[e['para']]} ({e['nota']})")
+        for evento in eventos:
+            status_anterior = STATUS.get(evento["de"], "—")
+            print(f"  dia {evento['dia']:>2}: {status_anterior} -> {STATUS[evento['para']]} ({evento['nota']})")
     else:
         print("Histórico:  nenhuma atualização ainda.")
 
@@ -77,33 +77,33 @@ def mostrar_eventos(eventos):
         print("Nenhum evento registrado.")
         return
     linhas = [
-        [e["id"], f"dia {e['dia']}", STATUS.get(e["de"], "—"), STATUS[e["para"]], e["nota"]]
-        for e in eventos
+        [evento["id"], f"dia {evento['dia']}", STATUS.get(evento["de"], "—"), STATUS[evento["para"]], evento["nota"]]
+        for evento in eventos
     ]
-    print(tabela(["Código", "Dia", "De", "Para", "Nota"], linhas))
+    print(formatar_tabela(["Código", "Dia", "De", "Para", "Nota"], linhas))
 
 
 # ---------------------------------------------------------------------------
 # Telas
 # ---------------------------------------------------------------------------
 
-def tela_validacao(painel):
-    titulo("Registros com problema (regras de validação)")
+def mostrar_validacao(painel):
+    mostrar_titulo("Registros com problema (regras de validação)")
     if not painel["rejeitados"] and not painel["avisos"]:
         print("Todos os registros passaram na validação.")
-    for r in painel["rejeitados"]:
-        reg = r["registro"]
-        print(f"Linha {r['linha']} do CSV (código {reg.get('id') or '?'}): NÃO cadastrada")
-        for problema in r["problemas"]:
+    for rejeitado in painel["rejeitados"]:
+        registro = rejeitado["registro"]
+        print(f"Linha {rejeitado['linha']} do CSV (código {registro.get('id') or '?'}): NÃO cadastrada")
+        for problema in rejeitado["problemas"]:
             print(f"  - {problema}")
     for aviso in painel["avisos"]:
         print(f"Aviso: {aviso}")
     print("\nRegistros recusados ficam fora da lista e dos indicadores até serem corrigidos no CSV.")
 
 
-def tela_hierarquia(painel):
-    titulo("Hierarquia: bairro -> categoria -> ocorrências")
-    for bairro, por_categoria in sorted(hierarquia(painel).items()):
+def mostrar_hierarquia(painel):
+    mostrar_titulo("Hierarquia: bairro -> categoria -> ocorrências")
+    for bairro, por_categoria in sorted(montar_hierarquia(painel).items()):
         total = sum(len(codigos) for codigos in por_categoria.values())
         print(f"{bairro} ({total})")
         for categoria in CATEGORIAS:
@@ -112,8 +112,8 @@ def tela_hierarquia(painel):
                 print(f"    {CATEGORIAS[categoria]}: {', '.join(codigos)}")
 
 
-def tela_matriz(painel):
-    categorias, situacoes, matriz = matriz_categoria_status(painel)
+def mostrar_matriz(painel):
+    categorias, situacoes, matriz = montar_matriz_categoria_status(painel)
     linhas = []
     totais_coluna = [0 for _ in situacoes]
     for i, categoria in enumerate(categorias):
@@ -121,55 +121,56 @@ def tela_matriz(painel):
         for j in range(len(situacoes)):
             totais_coluna[j] += matriz[i][j]
     linhas.append(["TOTAL"] + totais_coluna + [sum(totais_coluna)])
-    print(tabela(["Categoria"] + [STATUS[s] for s in situacoes] + ["Total"], linhas))
+    print(formatar_tabela(["Categoria"] + [STATUS[status] for status in situacoes] + ["Total"], linhas))
 
 
-def tela_indicadores(painel):
-    r = indicadores.resumo(painel)
-    titulo(f"Painel de indicadores (dia {DIA_ATUAL} da simulação)")
+def mostrar_indicadores(painel):
+    resumo = indicadores.resumir_indicadores(painel)
+    mostrar_titulo(f"Painel de indicadores (dia {DIA_ATUAL} da simulação)")
 
     print("Dados de origem: matriz categoria x status (lista de listas)\n")
-    tela_matriz(painel)
+    mostrar_matriz(painel)
 
     print("\n1) Proporção por categoria = ocorrências da categoria / total x 100")
-    print(tabela(
+    print(formatar_tabela(
         ["Categoria", "Qtd", "%"],
-        [[CATEGORIAS[c], n, f"{indicadores.proporcao(n, r['total']):.1f}%"]
-         for c, n in r["por_categoria"].items()],
+        [[CATEGORIAS[categoria], quantidade, f"{indicadores.transformar_em_porcentagem(quantidade, resumo['total']):.1f}%"]
+         for categoria, quantidade in resumo["por_categoria"].items()],
     ))
 
     print("\n2) Proporção por status = ocorrências no status / total x 100")
-    print(tabela(
+    print(formatar_tabela(
         ["Status", "Qtd", "%"],
-        [[STATUS[s], n, f"{indicadores.proporcao(n, r['total']):.1f}%"]
-         for s, n in r["por_status"].items()],
+        [[STATUS[status], quantidade, f"{indicadores.transformar_em_porcentagem(quantidade, resumo['total']):.1f}%"]
+         for status, quantidade in resumo["por_status"].items()],
     ))
 
     print("\n3) Tempo médio até a conclusão = soma(dia da conclusão - dia de abertura) / concluídas")
-    if r["tempos"]:
-        print(tabela(
+    if resumo["tempos"]:
+        print(formatar_tabela(
             ["Código", "Abertura", "Conclusão", "Dias"],
-            [[c, f"dia {a}", f"dia {f}", d] for c, a, f, d in r["tempos"]],
+            [[codigo, f"dia {abertura}", f"dia {conclusao}", dias]
+             for codigo, abertura, conclusao, dias in resumo["tempos"]],
         ))
-        print(f"Tempo médio: {r['tempo_medio_conclusao']:.1f} dias")
+        print(f"Tempo médio: {resumo['tempo_medio_conclusao']:.1f} dias")
     else:
         print("Nenhuma ocorrência concluída ainda.")
 
     print(f"\n4) Pendências = ocorrências com status diferente de Concluída")
     print(f"   idade de cada uma = dia atual ({DIA_ATUAL}) - dia de abertura")
-    print(tabela(
+    print(formatar_tabela(
         ["Código", "Status", "Dias em aberto"],
-        [[c, STATUS[s], d] for c, s, d in r["pendentes"]],
+        [[codigo, STATUS[status], dias] for codigo, status, dias in resumo["pendentes"]],
     ))
-    print(f"Pendências: {len(r['pendentes'])} | idade média: {r['idade_media_pendentes']:.1f} dias "
-          f"| na fila sem exame: {r['na_fila']} | taxa de resolução: {r['taxa_resolucao']:.1f}%")
+    print(f"Pendências: {len(resumo['pendentes'])} | idade média: {resumo['idade_media_pendentes']:.1f} dias "
+          f"| na fila sem exame: {resumo['na_fila']} | taxa de resolução: {resumo['taxa_resolucao']:.1f}%")
 
     print("\nO que os números sugerem:")
-    for frase in indicadores.interpretar(r):
+    for frase in indicadores.interpretar(resumo):
         print(f"- {frase}")
 
 
-def tela_status():
+def mostrar_status():
     print("Situações possíveis:")
     for chave, nome in STATUS.items():
         print(f"  {nome}: {SIGNIFICADO_STATUS[chave]}")
@@ -199,16 +200,16 @@ def escolher(texto, opcoes):
     return normalizar(resposta)  # o painel valida e explica se for inválido
 
 
-def acao_buscar(painel):
+def executar_busca(painel):
     codigo = perguntar("Código da ocorrência (ex.: 7 ou 007): ")
-    o = buscar_por_codigo(painel, codigo)
-    if o is None:
+    ocorrencia = buscar_por_codigo(painel, codigo)
+    if ocorrencia is None:
         print(f"Ocorrência '{codigo}' não encontrada. Use a opção 1 para ver os códigos.")
     else:
-        mostrar_detalhe(painel, o)
+        mostrar_detalhe(painel, ocorrencia)
 
 
-def acao_filtrar(painel):
+def executar_filtro(painel):
     print("Categoria (Enter para todas):")
     categoria = escolher("> ", CATEGORIAS)
     print("Status (Enter para todos):")
@@ -221,7 +222,7 @@ def acao_filtrar(painel):
     mostrar_ocorrencias(filtrar(painel, categoria, status))
 
 
-def acao_cadastrar(painel):
+def executar_cadastro(painel):
     print("Nova ocorrência. Não informe nomes, telefones ou e-mails: só o problema e um local genérico.")
     print("Categoria:")
     categoria = escolher("> ", CATEGORIAS) or ""
@@ -237,12 +238,12 @@ def acao_cadastrar(painel):
             print(f"  - {problema}")
 
 
-def acao_atualizar(painel):
+def executar_atualizacao(painel):
     codigo = perguntar("Código da ocorrência: ")
     if buscar_por_codigo(painel, codigo) is None:
         print(f"Ocorrência '{codigo}' não encontrada.")
         return
-    tela_status()
+    mostrar_status()
     print("Novo status:")
     novo = escolher("> ", STATUS) or ""
     nota = perguntar("Nota sobre a mudança (opcional): ")
@@ -250,7 +251,7 @@ def acao_atualizar(painel):
     print(mensagem)
 
 
-def acao_examinar(painel):
+def executar_exame(painel):
     if painel["fila"]:
         print("Fila de demandas não examinadas (frente -> fim): " + ", ".join(painel["fila"]))
     ok, mensagem = examinar_proxima(painel)
@@ -272,8 +273,8 @@ MENU = [
 ]
 
 
-def menu(painel):
-    titulo("Neighborhood Action Dashboard")
+def executar_menu(painel):
+    mostrar_titulo("Neighborhood Action Dashboard")
     print("Painel comunitário de ocorrências com dados fictícios. Digite o número da opção.")
     if painel["rejeitados"]:
         print(f"Atenção: {len(painel['rejeitados'])} registro(s) do arquivo foram recusados (opção 10).")
@@ -283,27 +284,27 @@ def menu(painel):
             print(f"{numero:>2}. {texto}")
         opcao = perguntar("Opção: ")
         if opcao == "1":
-            titulo("Ocorrências")
+            mostrar_titulo("Ocorrências")
             mostrar_ocorrencias(painel["ocorrencias"])
         elif opcao == "2":
-            acao_buscar(painel)
+            executar_busca(painel)
         elif opcao == "3":
-            acao_filtrar(painel)
+            executar_filtro(painel)
         elif opcao == "4":
-            acao_cadastrar(painel)
+            executar_cadastro(painel)
         elif opcao == "5":
-            acao_atualizar(painel)
+            executar_atualizacao(painel)
         elif opcao == "6":
-            acao_examinar(painel)
+            executar_exame(painel)
         elif opcao == "7":
-            titulo("Últimas atualizações (topo da pilha primeiro)")
-            mostrar_eventos(ultimas_atualizacoes(painel, 5))
+            mostrar_titulo("Últimas atualizações (topo da pilha primeiro)")
+            mostrar_eventos(listar_ultimas_atualizacoes(painel, 5))
         elif opcao == "8":
-            tela_hierarquia(painel)
+            mostrar_hierarquia(painel)
         elif opcao == "9":
-            tela_indicadores(painel)
+            mostrar_indicadores(painel)
         elif opcao == "10":
-            tela_validacao(painel)
+            mostrar_validacao(painel)
         elif opcao == "0":
             print("Até logo! As alterações desta sessão não são gravadas no CSV.")
             break
@@ -315,32 +316,32 @@ def menu(painel):
 # Demonstração (o roteiro do exemplo do enunciado)
 # ---------------------------------------------------------------------------
 
-def demo(painel):
-    titulo("Demonstração: carga e validação")
+def executar_demo(painel):
+    mostrar_titulo("Demonstração: carga e validação")
     print(f"{len(painel['ocorrencias'])} ocorrências válidas carregadas de data/ocorrencias.csv, "
           f"{len(painel['historico'])} eventos de data/historico.csv.")
-    tela_validacao(painel)
+    mostrar_validacao(painel)
 
-    titulo("Listagem")
+    mostrar_titulo("Listagem")
     mostrar_ocorrencias(painel["ocorrencias"])
 
-    titulo("Ação 1: cadastrar uma nova demanda")
+    mostrar_titulo("Ação 1: cadastrar uma nova demanda")
     print("Tentativa sem categoria:")
     ok, problemas = cadastrar(painel, "", "Poste apagado ao lado do chafariz", "Centro", "Praça Central")
-    for p in problemas:
-        print(f"  - recusada: {p}")
+    for problema in problemas:
+        print(f"  - recusada: {problema}")
     print("Tentativa com telefone na descrição:")
     ok, problemas = cadastrar(painel, "iluminacao", "Ligar para 11 98765-4321", "Centro", "Praça Central")
-    for p in problemas:
-        print(f"  - recusada: {p}")
+    for problema in problemas:
+        print(f"  - recusada: {problema}")
     print("Tentativa correta:")
     ok, nova = cadastrar(painel, "Iluminação", "Poste apagado ao lado do chafariz", "Centro", "Praça Central")
     print(f"  Cadastrada como {nova['id']} (status Aberta, entrou no fim da fila).")
 
-    titulo("Consulta: ocorrências abertas de iluminação")
+    mostrar_titulo("Consulta: ocorrências abertas de iluminação")
     mostrar_ocorrencias(filtrar(painel, categoria="iluminacao", status="aberta"))
 
-    titulo(f"Ação 2: alterar a {nova['id']} para 'em análise'")
+    mostrar_titulo(f"Ação 2: alterar a {nova['id']} para 'em análise'")
     print("Tentativa inválida (pular direto para concluída):")
     print("  " + atualizar_status(painel, nova["id"], "concluída")[1])
     print("Tentativa válida:")
@@ -350,18 +351,18 @@ def demo(painel):
     print()
     mostrar_detalhe(painel, nova)
 
-    titulo("Fila: examinar a demanda aberta mais antiga")
+    mostrar_titulo("Fila: examinar a demanda aberta mais antiga")
     print("Fila antes: " + ", ".join(painel["fila"]))
     print(examinar_proxima(painel)[1])
     print("Fila depois: " + ", ".join(painel["fila"]))
 
-    titulo("Pilha: últimas atualizações")
-    mostrar_eventos(ultimas_atualizacoes(painel, 4))
+    mostrar_titulo("Pilha: últimas atualizações")
+    mostrar_eventos(listar_ultimas_atualizacoes(painel, 4))
 
-    tela_hierarquia(painel)
+    mostrar_hierarquia(painel)
 
     print("\nAção 3: indicadores atualizados")
-    tela_indicadores(painel)
+    mostrar_indicadores(painel)
 
 
 def main():
@@ -373,9 +374,9 @@ def main():
         pass
     painel = carregar_painel()
     if "--demo" in sys.argv:
-        demo(painel)
+        executar_demo(painel)
     else:
-        menu(painel)
+        executar_menu(painel)
 
 
 if __name__ == "__main__":

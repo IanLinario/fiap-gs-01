@@ -68,7 +68,7 @@ def normalizar(texto):
         return ""
     texto = texto.strip().lower()
     sem_acento = unicodedata.normalize("NFKD", texto)
-    sem_acento = "".join(c for c in sem_acento if not unicodedata.combining(c))
+    sem_acento = "".join(caractere for caractere in sem_acento if not unicodedata.combining(caractere))
     return sem_acento.replace(" ", "_").replace("-", "_")
 
 
@@ -80,7 +80,7 @@ def normalizar_codigo(codigo):
     return codigo
 
 
-def vazio(valor):
+def esta_vazio(valor):
     return valor is None or str(valor).strip() == ""
 
 
@@ -88,11 +88,11 @@ def parece_dado_pessoal(texto):
     """True se o texto tem e-mail ou uma sequência longa de dígitos (telefone, CPF)."""
     digitos_seguidos = 0
     maior = 0
-    for c in texto:
-        if c.isdigit():
+    for caractere in texto:
+        if caractere.isdigit():
             digitos_seguidos += 1
             maior = max(maior, digitos_seguidos)
-        elif c not in " .-()":
+        elif caractere not in " .-()":
             digitos_seguidos = 0
     return "@" in texto or maior >= 8
 
@@ -108,7 +108,7 @@ def validar_ocorrencia(registro, codigos_usados):
     """
     problemas = []
     for campo in CAMPOS_OBRIGATORIOS:
-        if vazio(registro.get(campo)):
+        if esta_vazio(registro.get(campo)):
             problemas.append(f"campo obrigatório '{campo}' ausente")
 
     codigo = registro.get("id", "")
@@ -117,13 +117,13 @@ def validar_ocorrencia(registro, codigos_usados):
     descricao = registro.get("descricao") or ""
     dia = registro.get("dia_abertura")
 
-    if not vazio(codigo) and codigo in codigos_usados:
+    if not esta_vazio(codigo) and codigo in codigos_usados:
         problemas.append(f"código {codigo} repetido (já existe outra ocorrência com ele)")
-    if not vazio(categoria) and categoria not in CATEGORIAS:
+    if not esta_vazio(categoria) and categoria not in CATEGORIAS:
         problemas.append(f"categoria desconhecida: '{registro.get('categoria')}'")
-    if not vazio(status) and status not in STATUS:
+    if not esta_vazio(status) and status not in STATUS:
         problemas.append(f"status desconhecido: '{registro.get('status')}'")
-    if not vazio(dia):
+    if not esta_vazio(dia):
         if not str(dia).strip().isdigit():
             problemas.append(f"dia de abertura não é um número: '{dia}'")
         elif int(dia) < 1 or int(dia) > DIA_ATUAL:
@@ -142,7 +142,7 @@ def ler_csv(caminho):
         return list(csv.DictReader(arquivo, delimiter=";"))
 
 
-def painel_vazio():
+def criar_painel_vazio():
     return {
         "ocorrencias": [],     # lista
         "indice": {},          # dicionário código -> ocorrência
@@ -156,7 +156,7 @@ def painel_vazio():
 
 
 def carregar_painel(pasta=PASTA_DADOS):
-    painel = painel_vazio()
+    painel = criar_painel_vazio()
 
     linhas = ler_csv(os.path.join(pasta, "ocorrencias.csv"))
     for numero, registro in enumerate(linhas, start=2):  # linha 1 é o cabeçalho
@@ -174,21 +174,21 @@ def carregar_painel(pasta=PASTA_DADOS):
         _incluir(painel, _montar_ocorrencia(registro))
 
     eventos = ler_csv(os.path.join(pasta, "historico.csv"))
-    eventos.sort(key=lambda e: int(e["dia"]))  # sort é estável: empates mantêm a ordem do arquivo
+    eventos.sort(key=lambda evento: int(evento["dia"]))  # sort é estável: empates mantêm a ordem do arquivo
     for evento in eventos:
         codigo = normalizar_codigo(evento["id"])
-        de, para = normalizar(evento["de"]), normalizar(evento["para"])
+        status_anterior, status_novo = normalizar(evento["de"]), normalizar(evento["para"])
         if codigo not in painel["indice"]:
             painel["avisos"].append(f"evento ignorado: ocorrência {codigo} não existe")
-        elif de not in STATUS or para not in STATUS:
+        elif status_anterior not in STATUS or status_novo not in STATUS:
             painel["avisos"].append(f"evento ignorado em {codigo}: status desconhecido")
         else:
-            _registrar_evento(painel, codigo, int(evento["dia"]), de, para, evento["nota"])
+            _registrar_evento(painel, codigo, int(evento["dia"]), status_anterior, status_novo, evento["nota"])
 
     _conferir_historico(painel)
 
-    abertas = [o for o in painel["ocorrencias"] if o["status"] == "aberta"]
-    abertas.sort(key=lambda o: (o["dia_abertura"], o["id"]))
+    abertas = [ocorrencia for ocorrencia in painel["ocorrencias"] if ocorrencia["status"] == "aberta"]
+    abertas.sort(key=lambda ocorrencia: (ocorrencia["dia_abertura"], ocorrencia["id"]))
     for ocorrencia in abertas:
         painel["fila"].append(ocorrencia["id"])
     return painel
@@ -211,8 +211,8 @@ def _incluir(painel, ocorrencia):
     painel["indice"][ocorrencia["id"]] = ocorrencia
 
 
-def _registrar_evento(painel, codigo, dia, de, para, nota):
-    evento = {"id": codigo, "dia": dia, "de": de, "para": para, "nota": nota}
+def _registrar_evento(painel, codigo, dia, status_anterior, status_novo, nota):
+    evento = {"id": codigo, "dia": dia, "de": status_anterior, "para": status_novo, "nota": nota}
     painel["historico"].append(evento)
     painel["pilha"].append(evento)  # empilha: o mais recente fica no topo
     return evento
@@ -221,7 +221,7 @@ def _registrar_evento(painel, codigo, dia, de, para, nota):
 def _conferir_historico(painel):
     """O último evento de cada ocorrência precisa levar ao status atual dela."""
     for ocorrencia in painel["ocorrencias"]:
-        eventos = eventos_da_ocorrencia(painel, ocorrencia["id"])
+        eventos = listar_eventos_da_ocorrencia(painel, ocorrencia["id"])
         if eventos and eventos[-1]["para"] != ocorrencia["status"]:
             painel["avisos"].append(
                 f"{ocorrencia['id']}: o histórico termina em '{eventos[-1]['para']}', "
@@ -245,24 +245,24 @@ def buscar_por_codigo(painel, codigo):
 def filtrar(painel, categoria=None, status=None, bairro=None):
     """
     Filtro combinado. Um critério None não restringe nada:
-    (categoria is None or o.categoria == categoria) and (status is None or o.status == status)
+    (categoria is None or ocorrencia.categoria == categoria) and (status is None or ocorrencia.status == status)
     """
     resultado = []
-    for o in painel["ocorrencias"]:
+    for ocorrencia in painel["ocorrencias"]:
         if (
-            (categoria is None or o["categoria"] == categoria)
-            and (status is None or o["status"] == status)
-            and (bairro is None or normalizar(o["bairro"]) == normalizar(bairro))
+            (categoria is None or ocorrencia["categoria"] == categoria)
+            and (status is None or ocorrencia["status"] == status)
+            and (bairro is None or normalizar(ocorrencia["bairro"]) == normalizar(bairro))
         ):
-            resultado.append(o)
+            resultado.append(ocorrencia)
     return resultado
 
 
-def eventos_da_ocorrencia(painel, codigo):
-    return [e for e in painel["historico"] if e["id"] == codigo]
+def listar_eventos_da_ocorrencia(painel, codigo):
+    return [evento for evento in painel["historico"] if evento["id"] == codigo]
 
 
-def ultimas_atualizacoes(painel, quantidade=5):
+def listar_ultimas_atualizacoes(painel, quantidade=5):
     """Lê a pilha do topo para baixo sem desempilhar."""
     recentes = []
     posicao = len(painel["pilha"]) - 1
@@ -272,23 +272,23 @@ def ultimas_atualizacoes(painel, quantidade=5):
     return recentes
 
 
-def hierarquia(painel):
+def montar_hierarquia(painel):
     """{bairro: {categoria: [códigos]}}"""
     arvore = {}
-    for o in painel["ocorrencias"]:
-        por_categoria = arvore.setdefault(o["bairro"], {})
-        por_categoria.setdefault(o["categoria"], []).append(o["id"])
+    for ocorrencia in painel["ocorrencias"]:
+        por_categoria = arvore.setdefault(ocorrencia["bairro"], {})
+        por_categoria.setdefault(ocorrencia["categoria"], []).append(ocorrencia["id"])
     return arvore
 
 
-def matriz_categoria_status(painel):
+def montar_matriz_categoria_status(painel):
     """Lista de listas: uma linha por categoria, uma coluna por status."""
     categorias = list(CATEGORIAS)
     situacoes = list(STATUS)
     matriz = [[0 for _ in situacoes] for _ in categorias]
-    for o in painel["ocorrencias"]:
-        linha = categorias.index(o["categoria"])
-        coluna = situacoes.index(o["status"])
+    for ocorrencia in painel["ocorrencias"]:
+        linha = categorias.index(ocorrencia["categoria"])
+        coluna = situacoes.index(ocorrencia["status"])
         matriz[linha][coluna] += 1
     return categorias, situacoes, matriz
 
@@ -347,7 +347,7 @@ def atualizar_status(painel, codigo, novo_status, nota="", dia=None):
             return False, "Ocorrência concluída não muda mais. Cadastre uma nova se o problema voltar."
         return False, (
             f"Não é possível ir de '{STATUS[atual]}' para '{STATUS[novo]}'. "
-            f"Permitido: " + ", ".join(STATUS[s] for s in TRANSICOES[atual]) + "."
+            f"Permitido: " + ", ".join(STATUS[status] for status in TRANSICOES[atual]) + "."
         )
     else:
         if atual == "aberta" and ocorrencia["id"] in painel["fila"]:
