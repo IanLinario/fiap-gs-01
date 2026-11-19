@@ -4,3 +4,6 @@ __pycache__/
 
 # Anotações pessoais, fora da entrega
 docs/roteiro-video.md
+
+# Vídeo da apresentação: vai para o YouTube, não para o repositório
+*.mp4
