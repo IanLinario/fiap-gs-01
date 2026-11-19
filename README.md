@@ -238,7 +238,7 @@ As alterações feitas durante a execução ficam só na memória; os arquivos C
 
 ### 🔗 Links do Projeto
 
-* **[Vídeo de apresentação no YouTube](TODO_LINK_VIDEO)** - Demonstração do sistema em funcionamento (não listado).
+* **[Vídeo de apresentação no YouTube](https://youtu.be/gKG3TO6etv8)** - Demonstração do sistema em funcionamento (não listado).
 
 ### 🧠 Decisões Técnicas
 
